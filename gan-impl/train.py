@@ -48,11 +48,9 @@ def main():
     start_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     os.makedirs(os.path.join('../results/gan-impl', start_time), exist_ok=True)
 
-    iter = 0
     for epoch in range(50):
         for (imgs, _) in train_loader:
 
-            iter += 1
             num_imgs = len(imgs)
             real_img = imgs.to(device)
 
@@ -87,20 +85,20 @@ def main():
             g_losses.append(g_loss.item())
 
 
-        print('epoch: {:3d}, iter: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch, iter, d_loss.item(), g_loss.item()))
+        print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch, d_loss.item(), g_loss.item()))
         out_img = (g_gen[0].to('cpu').detach().numpy() * 256).astype(np.int32)
-        img_path = os.path.join('../results/gan-impl', start_time, 'gen_{}_{}.png'.format(epoch, iter))
+        img_path = os.path.join('../results/gan-impl', start_time, 'gen_{}.png'.format(epoch))
         graph_path = os.path.join('../results/gan-impl', start_time, 'graph.png')
-        plt.plot(list(range(1, iter + 1)), d_losses, label='d_loss')
-        plt.plot(list(range(1, iter + 1)), g_losses, label='g_loss')
+        plt.plot(list(range(1, epoch + 1)), d_losses, label='d_loss')
+        plt.plot(list(range(1, epoch + 1)), g_losses, label='g_loss')
         plt.legend()
         plt.savefig(graph_path)
         plt.close()
         cv2.imwrite(img_path, out_img)
 
-        d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}_{}.pth'.format(device, epoch, iter))
+        d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}.pth'.format(device, epoch))
         torch.save(generator.state_dict(), d_path)
-        g_path = os.path.join('../results/gan-impl', start_time, 'model_gen_{}_{}_{}.pth'.format(device, epoch, iter))
+        g_path = os.path.join('../results/gan-impl', start_time, 'model_gen_{}_{}.pth'.format(device, epoch))
         torch.save(descriminator.state_dict(), g_path)
 
 
