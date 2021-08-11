@@ -31,8 +31,8 @@ def main(d1, g1, g2, dlr, dbeta, glr, gbeta):
         nn.Sigmoid(),
     ).to(device)
 
-    g_optim = torch.optim.Adam(generator.parameters(), lr=dlr, betas=(dbeta, 0.999))
-    d_optim = torch.optim.Adam(descriminator.parameters(), lr=glr, betas=(gbeta, 0.999))
+    g_optim = torch.optim.Adam(generator.parameters(), lr=glr, betas=(gbeta, 0.999))
+    d_optim = torch.optim.Adam(descriminator.parameters(), lr=dlr, betas=(dbeta, 0.999))
 
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.ConvertImageDtype(torch.float)
