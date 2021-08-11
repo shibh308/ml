@@ -70,7 +70,7 @@ def main():
 
             # generator用に再生成
             noise = torch.rand(num_imgs, 128).to(device)
-            g_gen = generator(noise).reshape(-1, 28, 28)
+            g_gen = generator(noise).reshape(-1, 28, 28).detach()
             d_fake_out = descriminator(g_gen)
 
             # generatorの学習
