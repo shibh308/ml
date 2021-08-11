@@ -56,7 +56,7 @@ def main():
 
             # 生成と推論
             noise = torch.rand(num_imgs, 128).to(device)
-            g_gen = generator(noise).reshape(-1, 28, 28)
+            g_gen = generator(noise).reshape(-1, 28, 28).detach()
             d_real_out = descriminator(real_img)
             d_fake_out = descriminator(g_gen)
 
@@ -70,8 +70,8 @@ def main():
 
             # generator用に再生成
             noise = torch.rand(num_imgs, 128).to(device)
-            g_gen = generator(noise).reshape(-1, 28, 28).detach()
-            d_fake_out = descriminator(g_gen)
+            g_gen = generator(noise).reshape(-1, 28, 28)
+            d_fake_out = descriminator(g_gen).detach()
 
             # generatorの学習
             g_study_out = d_fake_out
