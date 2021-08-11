@@ -70,6 +70,7 @@ def main():
             d_optim.step()
 
             # generator用に再生成
+            g_optim.zero_grad()
             noise = torch.rand(num_imgs, 128).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28)
             d_fake_out = descriminator(g_gen)
@@ -78,7 +79,6 @@ def main():
             g_study_out = d_fake_out
             g_study_correct = torch.ones(num_imgs, 1).to(device)
             g_loss = loss(g_study_out, g_study_correct)
-            g_optim.zero_grad()
             g_loss.backward()
             g_optim.step()
 
