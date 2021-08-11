@@ -29,20 +29,20 @@ def main(dlr, dbeta, glr, gbeta):
         nn.Sigmoid()
     ).to(device)
     generator = nn.Sequential(
-        nn.Unflatten(1, (1, 6, 6)),
-        nn.ConvTranspose2d(1, 4, 3, bias=False),
-        nn.BatchNorm2d(4),
+        nn.Unflatten(1, (-1, 1, 1)),
+        nn.ConvTranspose2d(100, 64, 4, 2, bias=False),
+        nn.BatchNorm2d(64),
         nn.ReLU(),
-        nn.ConvTranspose2d(4, 8, 4, bias=False),
-        nn.BatchNorm2d(8),
+        nn.ConvTranspose2d(64, 32, 4, 2, bias=False),
+        nn.BatchNorm2d(32),
         nn.ReLU(),
-        nn.ConvTranspose2d(8, 16, 3, 2, bias=False),
+        nn.ConvTranspose2d(32, 32, 3, 1, bias=False),
+        nn.BatchNorm2d(32),
+        nn.ReLU(),
+        nn.ConvTranspose2d(32, 16, 4, 2, bias=False),
         nn.BatchNorm2d(16),
         nn.ReLU(),
-        nn.ConvTranspose2d(16, 8, 4, bias=False),
-        nn.BatchNorm2d(8),
-        nn.ReLU(),
-        nn.ConvTranspose2d(8, 1, 3, bias=False),
+        nn.ConvTranspose2d(16, 1, 3, bias=False),
         nn.Sigmoid(),
     ).to(device)
 
@@ -78,7 +78,7 @@ def main(dlr, dbeta, glr, gbeta):
             d_optim.zero_grad()
 
             # 生成と推論
-            noise = torch.randn(num_imgs, 36).to(device)
+            noise = torch.randn(num_imgs, 100).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28).detach()
             d_real_out = discriminator(real_img)
             d_fake_out = discriminator(g_gen[:, None])
@@ -92,7 +92,7 @@ def main(dlr, dbeta, glr, gbeta):
 
             # generator用に再生成
             g_optim.zero_grad()
-            noise = torch.randn(num_imgs, 36).to(device)
+            noise = torch.randn(num_imgs, 100).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28)
 
             # generatorの学習
@@ -108,7 +108,7 @@ def main(dlr, dbeta, glr, gbeta):
 
         print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch + 1, d_loss_sum / len(train_loader), g_loss_sum / len(train_loader)))
 
-        noise = torch.randn(10, 36).to(device)
+        noise = torch.randn(10, 100).to(device)
         g_gen = generator(noise).reshape(-1, 28, 28).to('cpu').detach().numpy() * 256
 
         for idx in range(len(g_gen)):
