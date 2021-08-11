@@ -89,24 +89,22 @@ def main():
             d_losses.append(d_loss.item())
             g_losses.append(g_loss.item())
 
-            print('epoch: {:3d}, iter: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch, iter, d_loss.item(), g_loss.item()))
 
-            if iter % 100 == 0:
-                out_img = (g_gen[0].to('cpu').detach().numpy() * 256).astype(np.int32)
-                img_path = os.path.join('../results/gan-impl', start_time, 'gen_{}_{}.png'.format(epoch, iter))
-                graph_path = os.path.join('../results/gan-impl', start_time, 'graph.png')
-                plt.plot(list(range(1, iter + 1)), d_losses, label='d_loss')
-                plt.plot(list(range(1, iter + 1)), g_losses, label='g_loss')
-                plt.legend()
-                plt.savefig(graph_path)
-                plt.close()
-                cv2.imwrite(img_path, out_img)
+        print('epoch: {:3d}, iter: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch, iter, d_loss.item(), g_loss.item()))
+        out_img = (g_gen[0].to('cpu').detach().numpy() * 256).astype(np.int32)
+        img_path = os.path.join('../results/gan-impl', start_time, 'gen_{}_{}.png'.format(epoch, iter))
+        graph_path = os.path.join('../results/gan-impl', start_time, 'graph.png')
+        plt.plot(list(range(1, iter + 1)), d_losses, label='d_loss')
+        plt.plot(list(range(1, iter + 1)), g_losses, label='g_loss')
+        plt.legend()
+        plt.savefig(graph_path)
+        plt.close()
+        cv2.imwrite(img_path, out_img)
 
-            if iter % 1000 == 0:
-                d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}.pth'.format(epoch, iter))
-                torch.save(generator.to('cpu').state_dict(), d_path)
-                g_path = os.path.join('../results/gan-impl', start_time, 'model_gen_{}_{}.pth'.format(epoch, iter))
-                torch.save(descriminator.to('cpu').state_dict(), g_path)
+        d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}.pth'.format(epoch, iter))
+        torch.save(generator.to('cpu').state_dict(), d_path)
+        g_path = os.path.join('../results/gan-impl', start_time, 'model_gen_{}_{}.pth'.format(epoch, iter))
+        torch.save(descriminator.to('cpu').state_dict(), g_path)
 
 
 if __name__ == '__main__':
