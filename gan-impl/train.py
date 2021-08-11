@@ -132,8 +132,8 @@ def main(dlr, dbeta, glr, gbeta):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dlr', type=float, default=1e-5)
-    parser.add_argument('--dbeta', type=float, default=0.1)
+    parser.add_argument('--dlr', type=float, default=2e-4)
+    parser.add_argument('--dbeta', type=float, default=0.5)
     parser.add_argument('--glr', type=float, default=2e-4)
     parser.add_argument('--gbeta', type=float, default=0.5)
 
