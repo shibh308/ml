@@ -6,28 +6,38 @@ import cv2
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
+from torch.nn.modules.activation import LeakyReLU
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms.transforms import ConvertImageDtype
 
-def main(d1, g1, g2, dlr, dbeta, glr, gbeta):
+def main(dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # [-1, ...] -> [-1, 1]
     descriminator = nn.Sequential(
+        nn.Conv2d(1, 4, 3, padding=1),
+        nn.LeakyReLU(0.2),
+        nn.Conv2d(4, 4, 3, padding=1),
+        nn.LeakyReLU(0.2),
+        nn.Conv2d(4, 1, 3, padding=1),
+        nn.LeakyReLU(0.2),
         nn.Flatten(),
-        nn.Linear(784, d1),
-        nn.ReLU(),
-        nn.Linear(d1, 1),
+        nn.Linear(784, 256),
+        nn.Linear(256, 1),
         nn.Sigmoid()
     ).to(device)
     # [-1, 128] -> [-1, 784]
     generator = nn.Sequential(
-        nn.Linear(128, g1),
+        nn.Linear(128, 784),
         nn.ReLU(),
-        nn.Linear(g1, g2),
+        nn.Unflatten(1, (1, 28, 28)),
+        nn.Conv2d(1, 4, 3, padding=1),
         nn.ReLU(),
-        nn.Linear(g2, 784),
+        nn.Conv2d(4, 4, 3, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(4, 1, 3, padding=1),
+        nn.ReLU(),
         nn.Sigmoid(),
     ).to(device)
 
@@ -66,7 +76,7 @@ def main(d1, g1, g2, dlr, dbeta, glr, gbeta):
             noise = torch.randn(num_imgs, 128).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28).detach()
             d_real_out = descriminator(real_img)
-            d_fake_out = descriminator(g_gen)
+            d_fake_out = descriminator(g_gen[:, None])
 
             # descriminatorの学習
             d_loss_fake = loss(d_fake_out, zeros)
@@ -81,7 +91,7 @@ def main(d1, g1, g2, dlr, dbeta, glr, gbeta):
             g_gen = generator(noise).reshape(-1, 28, 28)
 
             # generatorの学習
-            g_loss = loss(descriminator(g_gen), ones)
+            g_loss = loss(descriminator(g_gen[:, None]), ones)
             g_loss.backward()
             g_optim.step()
 
@@ -116,13 +126,10 @@ def main(d1, g1, g2, dlr, dbeta, glr, gbeta):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--d1', type=int, default=512)
-    parser.add_argument('--g1', type=int, default=512)
-    parser.add_argument('--g2', type=int, default=1024)
     parser.add_argument('--dlr', type=float, default=1e-5)
     parser.add_argument('--dbeta', type=float, default=0.1)
     parser.add_argument('--glr', type=float, default=2e-4)
     parser.add_argument('--gbeta', type=float, default=0.5)
 
     args = parser.parse_args()
-    main(args.d1, args.g1, args.g2, args.dlr, args.dbeta, args.glr, args.gbeta)
+    main(args.dlr, args.dbeta, args.glr, args.gbeta)
