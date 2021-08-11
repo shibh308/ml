@@ -1,3 +1,4 @@
 /datasets
-/results/
 /venv
+/results/gan-impl/*
+!.gitkeep
