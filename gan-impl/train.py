@@ -39,9 +39,6 @@ def main():
     train_set = datasets.MNIST('../datasets/mnist', train=True, download=True, transform=transform)
     train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
 
-    print(len(train_set))
-    print(len(train_loader))
-
     # BinaryCrossEntropy
     loss = nn.BCELoss()
 
@@ -101,10 +98,10 @@ def main():
         plt.close()
         cv2.imwrite(img_path, out_img)
 
-        d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}.pth'.format(epoch, iter))
-        torch.save(generator.to('cpu').state_dict(), d_path)
-        g_path = os.path.join('../results/gan-impl', start_time, 'model_gen_{}_{}.pth'.format(epoch, iter))
-        torch.save(descriminator.to('cpu').state_dict(), g_path)
+        d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}_{}.pth'.format(device, epoch, iter))
+        torch.save(generator.state_dict(), d_path)
+        g_path = os.path.join('../results/gan-impl', start_time, 'model_gen_{}_{}_{}.pth'.format(device, epoch, iter))
+        torch.save(descriminator.state_dict(), g_path)
 
 
 if __name__ == '__main__':
