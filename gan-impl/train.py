@@ -88,7 +88,7 @@ def main():
         print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch, d_loss.item(), g_loss.item()))
         noise = torch.rand(10, 128).to(device)
         g_gen = generator(noise).reshape(-1, 28, 28).to('cpu').detach().numpy() * 256
-        for idx in len(g_gen):
+        for idx in range(len(g_gen)):
             out_img = g_gen[idx].astype(np.int32)
             img_path = os.path.join('../results/gan-impl', start_time, 'gen_{}_{}.png'.format(epoch, idx))
         graph_path = os.path.join('../results/gan-impl', start_time, 'graph.png')
