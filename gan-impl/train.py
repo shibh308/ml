@@ -63,7 +63,7 @@ def main(d1, g1, g2):
             d_optim.zero_grad()
 
             # 生成と推論
-            noise = torch.rand(num_imgs, 128).to(device)
+            noise = torch.randn(num_imgs, 128).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28).detach()
             d_real_out = descriminator(real_img)
             d_fake_out = descriminator(g_gen)
@@ -77,7 +77,7 @@ def main(d1, g1, g2):
 
             # generator用に再生成
             g_optim.zero_grad()
-            noise = torch.rand(num_imgs, 128).to(device)
+            noise = torch.randn(num_imgs, 128).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28)
 
             # generatorの学習
@@ -91,10 +91,7 @@ def main(d1, g1, g2):
             g_loss_sum += g_loss.item()
 
 
-        print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch + 1, d_loss_sum, g_loss_sum))
-
-        noise = torch.rand(10, 128).to(device)
-        g_gen = generator(noise).reshape(-1, 28, 28).to('cpu').detach().numpy() * 256
+        print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch + 1, d_loss_sum / len(train_loader), g_loss_sum / len(train_loader)))
 
         for idx in range(len(g_gen)):
             out_img = g_gen[idx].astype(np.int32)
