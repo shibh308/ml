@@ -11,13 +11,22 @@ def main(gen_path, num_imgs):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     generator = nn.Sequential(
-        nn.Linear(128, 1024),
+        nn.Unflatten(1, (-1, 1, 1)),
+        nn.ConvTranspose2d(100, 128, 3, 1, 0, bias=False),
+        nn.BatchNorm2d(128),
         nn.ReLU(),
-        nn.Linear(1024, 2048),
+        nn.ConvTranspose2d(128, 64, 4, 2, 1, bias=False),
+        nn.BatchNorm2d(64),
         nn.ReLU(),
-        nn.Linear(2048, 784),
+        nn.ConvTranspose2d(64, 32, 2, 2, 1, bias=False),
+        nn.BatchNorm2d(32),
+        nn.ReLU(),
+        nn.ConvTranspose2d(32, 16, 2, 2, 2, bias=False),
+        nn.BatchNorm2d(16),
+        nn.ReLU(),
+        nn.ConvTranspose2d(16, 1, 2, 2, 2, bias=False),
         nn.Sigmoid(),
-    )
+    ).to(device)
     generator.load_state_dict(torch.load(gen_path))
     generator = generator.to(device)
 
