@@ -16,10 +16,13 @@ def main(dlr, dbeta, glr, gbeta):
 
     descriminator = nn.Sequential(
         nn.Conv2d(1, 4, 4, 2, bias=False),
+        nn.BatchNorm2d(4),
         nn.LeakyReLU(0.2),
         nn.Conv2d(4, 8, 4, 2, bias=False),
+        nn.BatchNorm2d(8),
         nn.LeakyReLU(0.2),
         nn.Conv2d(8, 16, 2, bias=False),
+        nn.BatchNorm2d(16),
         nn.LeakyReLU(0.2),
         nn.Conv2d(16, 1, 4, bias=False),
         nn.LeakyReLU(0.2),
@@ -28,15 +31,19 @@ def main(dlr, dbeta, glr, gbeta):
     ).to(device)
     generator = nn.Sequential(
         nn.Unflatten(1, (1, 6, 6)),
-        nn.ConvTranspose2d(1, 4, 3),
+        nn.ConvTranspose2d(1, 4, 3, bias=False),
+        nn.BatchNorm2d(4),
         nn.ReLU(),
-        nn.ConvTranspose2d(4, 8, 4),
+        nn.ConvTranspose2d(4, 8, 4, bias=False),
+        nn.BatchNorm2d(8),
         nn.ReLU(),
-        nn.ConvTranspose2d(8, 16, 3, 2),
+        nn.ConvTranspose2d(8, 16, 3, 2, bias=False),
+        nn.BatchNorm2d(16),
         nn.ReLU(),
-        nn.ConvTranspose2d(16, 8, 4),
+        nn.ConvTranspose2d(16, 8, 4, bias=False),
+        nn.BatchNorm2d(8),
         nn.ReLU(),
-        nn.ConvTranspose2d(8, 1, 3),
+        nn.ConvTranspose2d(8, 1, 3, bias=False),
         nn.Sigmoid(),
     ).to(device)
 
