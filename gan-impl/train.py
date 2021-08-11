@@ -14,29 +14,29 @@ from torchvision.transforms.transforms import ConvertImageDtype
 def main(dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # [-1, ...] -> [-1, 1]
     descriminator = nn.Sequential(
-        nn.Conv2d(1, 4, 3, padding=1),
+        nn.Conv2d(1, 4, 4, 2, bias=False),
         nn.LeakyReLU(0.2),
-        nn.Conv2d(4, 4, 3, padding=1),
+        nn.Conv2d(4, 8, 4, 2, bias=False),
         nn.LeakyReLU(0.2),
-        nn.Conv2d(4, 1, 3, padding=1),
+        nn.Conv2d(8, 16, 2, bias=False),
+        nn.LeakyReLU(0.2),
+        nn.Conv2d(16, 1, 4, bias=False),
         nn.LeakyReLU(0.2),
         nn.Flatten(),
-        nn.Linear(784, 256),
-        nn.Linear(256, 1),
         nn.Sigmoid()
     ).to(device)
-    # [-1, 128] -> [-1, 784]
     generator = nn.Sequential(
-        nn.Linear(128, 784),
+        nn.Unflatten(1, (1, 6, 6)),
+        nn.ConvTranspose2d(1, 4, 3),
         nn.ReLU(),
-        nn.Unflatten(1, (1, 28, 28)),
-        nn.Conv2d(1, 4, 3, padding=1),
+        nn.ConvTranspose2d(4, 8, 4),
         nn.ReLU(),
-        nn.Conv2d(4, 4, 3, padding=1),
+        nn.ConvTranspose2d(8, 16, 3, 2),
         nn.ReLU(),
-        nn.Conv2d(4, 1, 3, padding=1),
+        nn.ConvTranspose2d(16, 8, 4),
+        nn.ReLU(),
+        nn.ConvTranspose2d(8, 1, 3),
         nn.ReLU(),
         nn.Sigmoid(),
     ).to(device)
@@ -73,7 +73,7 @@ def main(dlr, dbeta, glr, gbeta):
             d_optim.zero_grad()
 
             # 生成と推論
-            noise = torch.randn(num_imgs, 128).to(device)
+            noise = torch.randn(num_imgs, 36).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28).detach()
             d_real_out = descriminator(real_img)
             d_fake_out = descriminator(g_gen[:, None])
@@ -87,7 +87,7 @@ def main(dlr, dbeta, glr, gbeta):
 
             # generator用に再生成
             g_optim.zero_grad()
-            noise = torch.randn(num_imgs, 128).to(device)
+            noise = torch.randn(num_imgs, 36).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28)
 
             # generatorの学習
@@ -103,7 +103,7 @@ def main(dlr, dbeta, glr, gbeta):
 
         print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch + 1, d_loss_sum / len(train_loader), g_loss_sum / len(train_loader)))
 
-        noise = torch.randn(10, 128).to(device)
+        noise = torch.randn(10, 36).to(device)
         g_gen = generator(noise).reshape(-1, 28, 28).to('cpu').detach().numpy() * 256
 
         for idx in range(len(g_gen)):
