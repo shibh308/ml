@@ -52,7 +52,7 @@ def main():
         for (imgs, _) in train_loader:
 
             num_imgs = len(imgs)
-            real_img = imgs.to(device
+            real_img = imgs.to(device)
 
             # 生成と推論
             noise = torch.rand(num_imgs, 128).to(device)
