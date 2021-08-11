@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import os
 import numpy as np
@@ -9,24 +10,24 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms.transforms import ConvertImageDtype
 
-def main():
+def main(d1, g1, g2):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # [-1, ...] -> [-1, 1]
     descriminator = nn.Sequential(
         nn.Flatten(),
-        nn.Linear(784, 512),
+        nn.Linear(784, d1),
         nn.ReLU(),
-        nn.Linear(512, 1),
+        nn.Linear(d1, 1),
         nn.Sigmoid()
     ).to(device)
     # [-1, 128] -> [-1, 784]
     generator = nn.Sequential(
-        nn.Linear(128, 1024),
+        nn.Linear(128, g1),
         nn.ReLU(),
-        nn.Linear(1024, 2048),
+        nn.Linear(g1, g2),
         nn.ReLU(),
-        nn.Linear(2048, 784),
+        nn.Linear(g2, 784),
         nn.Sigmoid(),
     ).to(device)
 
@@ -110,4 +111,10 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--d1', type=int, default=512)
+    parser.add_argument('--g1', type=int, default=512)
+    parser.add_argument('--g2', type=int, default=1024)
+
+    args = parser.parse_args()
+    main(args.d1, args.g1, args.g2)
