@@ -6,10 +6,8 @@ import cv2
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
-from torch.nn.modules.activation import LeakyReLU
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from torchvision.transforms.transforms import ConvertImageDtype
 
 def main(dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
