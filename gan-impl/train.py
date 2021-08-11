@@ -52,7 +52,7 @@ def main():
         for (imgs, _) in train_loader:
 
             num_imgs = len(imgs)
-            real_img = imgs.to(device)
+            real_img = imgs.to(device
 
             # 生成と推論
             noise = torch.rand(num_imgs, 128).to(device)
@@ -71,7 +71,7 @@ def main():
             # generator用に再生成
             noise = torch.rand(num_imgs, 128).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28)
-            d_fake_out = descriminator(g_gen).detach()
+            d_fake_out = descriminator(g_gen)
 
             # generatorの学習
             g_study_out = d_fake_out
