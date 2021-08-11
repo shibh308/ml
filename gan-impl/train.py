@@ -41,7 +41,7 @@ def main(d1, g1, g2):
     train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
 
     # BinaryCrossEntropy
-    loss = nn.BCELoss()
+    loss = nn.BCELoss().to(device)
 
     d_losses = []
     g_losses = []
@@ -50,10 +50,15 @@ def main(d1, g1, g2):
     os.makedirs(os.path.join('../results/gan-impl', start_time), exist_ok=True)
 
     for epoch in range(50):
+        d_loss_sum = 0.0
+        g_loss_sum = 0.0
         for (imgs, _) in train_loader:
 
             num_imgs = len(imgs)
             real_img = imgs.to(device)
+
+            ones = torch.ones(num_imgs, 1).to(device)
+            zeros = torch.zeros(num_imgs, 1).to(device)
 
             d_optim.zero_grad()
 
@@ -64,9 +69,9 @@ def main(d1, g1, g2):
             d_fake_out = descriminator(g_gen)
 
             # descriminatorの学習
-            d_study_out = torch.cat((d_real_out, d_fake_out), 0)
-            d_study_correct = torch.cat((torch.ones(num_imgs, 1), torch.zeros(num_imgs, 1)), 0).to(device)
-            d_loss = loss(d_study_out, d_study_correct)
+            d_loss_fake = loss(d_fake_out, zeros)
+            d_loss_real = loss(d_real_out, ones)
+            d_loss = d_loss_fake + d_loss_real
             d_loss.backward()
             d_optim.step()
 
@@ -74,20 +79,19 @@ def main(d1, g1, g2):
             g_optim.zero_grad()
             noise = torch.rand(num_imgs, 128).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28)
-            d_fake_out = descriminator(g_gen)
 
             # generatorの学習
-            g_study_out = d_fake_out
-            g_study_correct = torch.ones(num_imgs, 1).to(device)
-            g_loss = loss(g_study_out, g_study_correct)
+            g_loss = loss(descriminator(g_gen), ones)
             g_loss.backward()
             g_optim.step()
 
             d_losses.append(d_loss.item())
             g_losses.append(g_loss.item())
+            d_loss_sum += d_loss.item()
+            g_loss_sum += g_loss.item()
 
 
-        print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch, d_loss.item(), g_loss.item()))
+        print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch + 1, d_loss_sum, g_loss_sum))
 
         noise = torch.rand(10, 128).to(device)
         g_gen = generator(noise).reshape(-1, 28, 28).to('cpu').detach().numpy() * 256
