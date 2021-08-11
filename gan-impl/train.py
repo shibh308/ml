@@ -25,7 +25,6 @@ def main(dlr, dbeta, glr, gbeta):
         nn.BatchNorm2d(16),
         nn.LeakyReLU(0.2),
         nn.Conv2d(16, 1, 4, bias=False),
-        nn.LeakyReLU(0.2),
         nn.Flatten(),
         nn.Sigmoid()
     ).to(device)
