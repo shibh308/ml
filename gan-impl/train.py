@@ -15,34 +15,37 @@ def main(dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     discriminator = nn.Sequential(
-        nn.Conv2d(1, 4, 4, 2, bias=False),
+        nn.Conv2d(1, 4, 2, 2, 2, bias=False),
         nn.BatchNorm2d(4),
         nn.LeakyReLU(0.2),
-        nn.Conv2d(4, 8, 4, 2, bias=False),
+        nn.Conv2d(4, 8, 2, 2, 2, bias=False),
         nn.BatchNorm2d(8),
         nn.LeakyReLU(0.2),
-        nn.Conv2d(8, 16, 2, bias=False),
+        nn.Conv2d(8, 16, 2, 2, 1, bias=False),
         nn.BatchNorm2d(16),
         nn.LeakyReLU(0.2),
-        nn.Conv2d(16, 1, 4, bias=False),
+        nn.Conv2d(16, 32, 4, 2, 1, bias=False),
+        nn.BatchNorm2d(32),
+        nn.LeakyReLU(0.2),
+        nn.Conv2d(32, 1, 3, 1, 0, bias=False),
         nn.Flatten(),
         nn.Sigmoid()
     ).to(device)
     generator = nn.Sequential(
         nn.Unflatten(1, (-1, 1, 1)),
-        nn.ConvTranspose2d(100, 64, 4, 2, bias=False),
+        nn.ConvTranspose2d(100, 128, 3, 1, 0, bias=False),
+        nn.BatchNorm2d(128),
+        nn.ReLU(),
+        nn.ConvTranspose2d(128, 64, 4, 2, 1, bias=False),
         nn.BatchNorm2d(64),
         nn.ReLU(),
-        nn.ConvTranspose2d(64, 32, 4, 2, bias=False),
+        nn.ConvTranspose2d(64, 32, 2, 2, 1, bias=False),
         nn.BatchNorm2d(32),
         nn.ReLU(),
-        nn.ConvTranspose2d(32, 32, 3, 1, bias=False),
-        nn.BatchNorm2d(32),
-        nn.ReLU(),
-        nn.ConvTranspose2d(32, 16, 4, 2, bias=False),
+        nn.ConvTranspose2d(32, 16, 2, 2, 2, bias=False),
         nn.BatchNorm2d(16),
         nn.ReLU(),
-        nn.ConvTranspose2d(16, 1, 3, bias=False),
+        nn.ConvTranspose2d(16, 1, 2, 2, 2, bias=False),
         nn.Sigmoid(),
     ).to(device)
 
