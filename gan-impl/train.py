@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms.transforms import ConvertImageDtype
 
-def main(d1, g1, g2):
+def main(d1, g1, g2, dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # [-1, ...] -> [-1, 1]
@@ -31,8 +31,8 @@ def main(d1, g1, g2):
         nn.Sigmoid(),
     ).to(device)
 
-    g_optim = torch.optim.Adam(generator.parameters(), lr=2e-4, betas=(0.5, 0.999))
-    d_optim = torch.optim.Adam(descriminator.parameters(), lr=2e-4, betas=(0.5, 0.999))
+    g_optim = torch.optim.Adam(generator.parameters(), lr=dlr, betas=(dbeta, 0.999))
+    d_optim = torch.optim.Adam(descriminator.parameters(), lr=glr, betas=(gbeta, 0.999))
 
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.ConvertImageDtype(torch.float)
@@ -119,6 +119,10 @@ if __name__ == '__main__':
     parser.add_argument('--d1', type=int, default=512)
     parser.add_argument('--g1', type=int, default=512)
     parser.add_argument('--g2', type=int, default=1024)
+    parser.add_argument('--dlr', type=float, default=1e-5)
+    parser.add_argument('--dbeta', type=float, default=0.1)
+    parser.add_argument('--glr', type=float, default=2e-4)
+    parser.add_argument('--gbeta', type=float, default=0.5)
 
     args = parser.parse_args()
-    main(args.d1, args.g1, args.g2)
+    main(args.d1, args.g1, args.g2, args.dlr, args.dbeta, args.glr, args.gbeta)
