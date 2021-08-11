@@ -14,7 +14,7 @@ from torchvision.transforms.transforms import ConvertImageDtype
 def main(dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    descriminator = nn.Sequential(
+    discriminator = nn.Sequential(
         nn.Conv2d(1, 4, 4, 2, bias=False),
         nn.BatchNorm2d(4),
         nn.LeakyReLU(0.2),
@@ -48,7 +48,7 @@ def main(dlr, dbeta, glr, gbeta):
     ).to(device)
 
     g_optim = torch.optim.Adam(generator.parameters(), lr=glr, betas=(gbeta, 0.999))
-    d_optim = torch.optim.Adam(descriminator.parameters(), lr=dlr, betas=(dbeta, 0.999))
+    d_optim = torch.optim.Adam(discriminator.parameters(), lr=dlr, betas=(dbeta, 0.999))
 
     transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.ConvertImageDtype(torch.float)
@@ -81,10 +81,10 @@ def main(dlr, dbeta, glr, gbeta):
             # 生成と推論
             noise = torch.randn(num_imgs, 36).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28).detach()
-            d_real_out = descriminator(real_img)
-            d_fake_out = descriminator(g_gen[:, None])
+            d_real_out = discriminator(real_img)
+            d_fake_out = discriminator(g_gen[:, None])
 
-            # descriminatorの学習
+            # discriminatorの学習
             d_loss_fake = loss(d_fake_out, zeros)
             d_loss_real = loss(d_real_out, ones)
             d_loss = d_loss_fake + d_loss_real
@@ -97,7 +97,7 @@ def main(dlr, dbeta, glr, gbeta):
             g_gen = generator(noise).reshape(-1, 28, 28)
 
             # generatorの学習
-            g_loss = loss(descriminator(g_gen[:, None]), ones)
+            g_loss = loss(discriminator(g_gen[:, None]), ones)
             g_loss.backward()
             g_optim.step()
 
@@ -124,10 +124,10 @@ def main(dlr, dbeta, glr, gbeta):
         plt.savefig(graph_path)
         plt.close()
 
-        d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}.pth'.format(device, epoch))
+        d_path = os.path.join('../results/gan-impl', start_time, 'model_dis_{}_{}.pth'.format(device, epoch))
         torch.save(generator.state_dict(), d_path)
         g_path = os.path.join('../results/gan-impl', start_time, 'model_gen_{}_{}.pth'.format(device, epoch))
-        torch.save(descriminator.state_dict(), g_path)
+        torch.save(discriminator.state_dict(), g_path)
 
 
 if __name__ == '__main__':
