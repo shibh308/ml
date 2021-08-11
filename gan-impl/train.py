@@ -86,18 +86,21 @@ def main():
 
 
         print('epoch: {:3d}, d_loss:{:.3f}, gen_loss:{:.3f}'.format(epoch, d_loss.item(), g_loss.item()))
+
         noise = torch.rand(10, 128).to(device)
         g_gen = generator(noise).reshape(-1, 28, 28).to('cpu').detach().numpy() * 256
+
         for idx in range(len(g_gen)):
             out_img = g_gen[idx].astype(np.int32)
             img_path = os.path.join('../results/gan-impl', start_time, 'gen_{}_{}.png'.format(epoch, idx))
+            cv2.imwrite(img_path, out_img)
+
         graph_path = os.path.join('../results/gan-impl', start_time, 'graph.png')
         plt.plot(list(range(1, len(d_losses) + 1)), d_losses, label='d_loss')
         plt.plot(list(range(1, len(g_losses) + 1)), g_losses, label='g_loss')
         plt.legend()
         plt.savefig(graph_path)
         plt.close()
-        cv2.imwrite(img_path, out_img)
 
         d_path = os.path.join('../results/gan-impl', start_time, 'model_des_{}_{}.pth'.format(device, epoch))
         torch.save(generator.state_dict(), d_path)
