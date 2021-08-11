@@ -37,7 +37,6 @@ def main(dlr, dbeta, glr, gbeta):
         nn.ConvTranspose2d(16, 8, 4),
         nn.ReLU(),
         nn.ConvTranspose2d(8, 1, 3),
-        nn.ReLU(),
         nn.Sigmoid(),
     ).to(device)
 
