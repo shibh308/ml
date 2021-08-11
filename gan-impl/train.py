@@ -54,6 +54,8 @@ def main():
             num_imgs = len(imgs)
             real_img = imgs.to(device)
 
+            d_optim.zero_grad()
+
             # 生成と推論
             noise = torch.rand(num_imgs, 128).to(device)
             g_gen = generator(noise).reshape(-1, 28, 28).detach()
@@ -64,7 +66,6 @@ def main():
             d_study_out = torch.cat((d_real_out, d_fake_out), 0)
             d_study_correct = torch.cat((torch.ones(num_imgs, 1), torch.zeros(num_imgs, 1)), 0).to(device)
             d_loss = loss(d_study_out, d_study_correct)
-            d_optim.zero_grad()
             d_loss.backward()
             d_optim.step()
 
