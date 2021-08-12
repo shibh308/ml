@@ -54,10 +54,13 @@ def main(dlr, dbeta, glr, gbeta):
         g_loss_sum = 0.0
         d_loss_sum = 0.0
         cycle_loss_sum = 0.0
-        for (apple_real_imgs, _), (orange_real_imgs, _) in zip(apple_loader, orange_loader):
+        for (_apple_real_imgs, _), (_orange_real_imgs, _) in zip(apple_loader, orange_loader):
             n_imgs = len(apple_real_imgs)
             zeros = torch.zeros((n_imgs, 1)).to(device)
             ones = torch.ones((n_imgs, 1)).to(device)
+
+            apple_real_imgs = _apple_real_imgs.to(device)
+            orange_real_imgs = _orange_real_imgs.to(device)
 
             # Discriminator
             apple.D_optim.zero_grad()
@@ -112,7 +115,6 @@ def main(dlr, dbeta, glr, gbeta):
             d_loss_sum += apple_loss_sum.item() + orange_loss_sum.item()
             g_loss_sum += apple_fake_loss.item() + orange_fake_loss.item()
             cycle_loss_sum += cycle_loss.item()
-            break
 
         d_losses.append(d_loss_sum)
         g_losses.append(g_loss_sum)
