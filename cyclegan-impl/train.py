@@ -25,7 +25,7 @@ class SingleLabelLoader(datasets.CIFAR100):
         self.targets = new_targets
 
 
-def main(dlr, dbeta, glr, gbeta):
+def main(n_epoch, dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     start_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -50,7 +50,7 @@ def main(dlr, dbeta, glr, gbeta):
     g_losses = []
     cycle_losses = []
 
-    for epoch in range(1000):
+    for epoch in range(n_epoch):
         g_loss_sum = 0.0
         d_loss_sum = 0.0
         cycle_loss_sum = 0.0
@@ -145,10 +145,11 @@ def main(dlr, dbeta, glr, gbeta):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--epoch', type=int, default=10000)
     parser.add_argument('--dlr', type=float, default=2e-4)
     parser.add_argument('--dbeta', type=float, default=0.5)
     parser.add_argument('--glr', type=float, default=2e-4)
     parser.add_argument('--gbeta', type=float, default=0.5)
 
     args = parser.parse_args()
-    main(args.dlr, args.dbeta, args.glr, args.gbeta)
+    main(args.epoch, args.dlr, args.dbeta, args.glr, args.gbeta)
