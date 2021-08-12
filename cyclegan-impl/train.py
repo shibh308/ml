@@ -25,7 +25,7 @@ class SingleLabelLoader(datasets.CIFAR100):
         self.targets = new_targets
 
 
-def main(n_epoch, lambda_, dlr, dbeta, glr, gbeta):
+def main(n_epoch, lambda_, lambda2, dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     start_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -49,11 +49,13 @@ def main(n_epoch, lambda_, dlr, dbeta, glr, gbeta):
     d_losses = []
     g_losses = []
     cycle_losses = []
+    ident_losses = []
 
     for epoch in range(n_epoch):
         g_loss_sum = 0.0
         d_loss_sum = 0.0
         cycle_loss_sum = 0.0
+        ident_loss_sum = 0.0
         for (_apple_real_imgs, _), (_orange_real_imgs, _) in zip(apple_loader, orange_loader):
             n_imgs = len(_apple_real_imgs)
             zeros = torch.zeros((n_imgs, 1, 3, 3)).to(device)
@@ -105,7 +107,14 @@ def main(n_epoch, lambda_, dlr, dbeta, glr, gbeta):
             orange_cycle_loss = l1loss(orange_real_imgs, orange_cycle_imgs)
             cycle_loss = apple_cycle_loss + orange_cycle_loss
 
-            loss_sum = apple_fake_loss + orange_fake_loss + lambda_ * cycle_loss
+            # Generator (Ident)
+            apple_ident_imgs = apple.G(apple_real_imgs)
+            orange_ident_imgs = orange.G(orange_real_imgs)
+            apple_ident_loss = l1loss(apple_real_imgs, apple_ident_imgs)
+            orange_ident_loss = l1loss(orange_real_imgs, orange_ident_imgs)
+            ident_loss = apple_ident_loss + orange_ident_loss
+
+            loss_sum = apple_fake_loss + orange_fake_loss + lambda_ * cycle_loss + lambda2 * ident_loss
 
             # Generator Step
             loss_sum.backward()
@@ -115,12 +124,14 @@ def main(n_epoch, lambda_, dlr, dbeta, glr, gbeta):
             d_loss_sum += apple_loss_sum.item() + orange_loss_sum.item()
             g_loss_sum += apple_fake_loss.item() + orange_fake_loss.item()
             cycle_loss_sum += cycle_loss.item()
+            ident_loss_sum += ident_loss.item()
 
         d_losses.append(d_loss_sum)
         g_losses.append(g_loss_sum)
         cycle_losses.append(cycle_loss_sum)
+        ident_losses.append(ident_loss_sum)
 
-        print('epoch: {:3d}, d_loss_sum: {:.3f}, g_loss_sum: {:.3f}, cycle_loss_sum: {:.3f}'.format(epoch, d_loss_sum, g_loss_sum, cycle_loss_sum))
+        print('epoch: {:3d}, d_loss_sum: {:.3f}, g_loss_sum: {:.3f}, cycle_loss_sum: {:.3f}, ident_loss_sum: {:.3f}'.format(epoch, d_loss_sum, g_loss_sum, cycle_loss_sum, ident_loss_sum))
 
         apple_1 = apple_real_imgs[0].to('cpu').detach().numpy()
         apple_2 = orange_fake_imgs[0].to('cpu').detach().numpy()
@@ -139,6 +150,7 @@ def main(n_epoch, lambda_, dlr, dbeta, glr, gbeta):
         plt.plot(list(range(1, len(d_losses) + 1)), d_losses, label='d_loss')
         plt.plot(list(range(1, len(g_losses) + 1)), g_losses, label='g_loss')
         plt.plot(list(range(1, len(cycle_losses) + 1)), cycle_losses, label='c_loss')
+        plt.plot(list(range(1, len(ident_losses) + 1)), ident_losses, label='i_loss')
         plt.legend()
         plt.savefig(graph_path)
         plt.close()
@@ -147,10 +159,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epoch', type=int, default=10000)
     parser.add_argument('--lambda', type=float, dest='lambda_', default=1.0)
+    parser.add_argument('--lambda2', type=float, default=1.0)
     parser.add_argument('--dlr', type=float, default=2e-4)
     parser.add_argument('--dbeta', type=float, default=0.5)
     parser.add_argument('--glr', type=float, default=2e-4)
     parser.add_argument('--gbeta', type=float, default=0.5)
 
     args = parser.parse_args()
-    main(args.epoch, args.lambda_, args.dlr, args.dbeta, args.glr, args.gbeta)
+    main(args.epoch, args.lambda_, args.lambda2, args.dlr, args.dbeta, args.glr, args.gbeta)
