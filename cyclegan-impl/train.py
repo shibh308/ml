@@ -122,13 +122,13 @@ def main(dlr, dbeta, glr, gbeta):
 
         print('epoch: {:3d}, d_loss_sum: {:.3f}, g_loss_sum: {:.3f}, cycle_loss_sum: {:.3f}'.format(epoch, d_loss_sum, g_loss_sum, cycle_loss_sum))
 
-        apple_1 = apple_real_imgs[0].detach().numpy()
-        apple_2 = orange_fake_imgs[0].detach().numpy()
-        apple_3 = apple_cycle_imgs[0].detach().numpy()
+        apple_1 = apple_real_imgs[0].to('cpu').detach().numpy()
+        apple_2 = orange_fake_imgs[0].to('cpu').detach().numpy()
+        apple_3 = apple_cycle_imgs[0].to('cpu').detach().numpy()
 
-        orange_1 = orange_real_imgs[0].detach().numpy()
-        orange_2 = apple_fake_imgs[0].detach().numpy()
-        orange_3 = orange_cycle_imgs[0].detach().numpy()
+        orange_1 = orange_real_imgs[0].to('cpu').detach().numpy()
+        orange_2 = apple_fake_imgs[0].to('cpu').detach().numpy()
+        orange_3 = orange_cycle_imgs[0].to('cpu').detach().numpy()
 
         img_path = os.path.join('../results/cyclegan-impl', start_time, 'gen_{}.png'.format(epoch))
         img = np.concatenate([apple_1, apple_2, apple_3, orange_1, orange_2, orange_3], axis=2).transpose(1, 2, 0)
