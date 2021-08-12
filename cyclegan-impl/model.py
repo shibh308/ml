@@ -14,6 +14,7 @@ class Generator(nn.Module):
         self.r1_conv2 = nn.Conv2d(128, 128, 1, bias=False)
         self.r1_bn2 = nn.BatchNorm2d(128)
 
+        """
         self.r2_conv1 = nn.Conv2d(128, 128, 1, bias=False)
         self.r2_bn1 = nn.BatchNorm2d(128)
         self.r2_conv2 = nn.Conv2d(128, 128, 1, bias=False)
@@ -28,6 +29,7 @@ class Generator(nn.Module):
         self.r4_bn1 = nn.BatchNorm2d(128)
         self.r4_conv2 = nn.Conv2d(128, 128, 1, bias=False)
         self.r4_bn2 = nn.BatchNorm2d(128)
+        """
 
         self.conv3 = nn.ConvTranspose2d(128, 64, 5, 2, 1, bias=True)
         self.bn3 = nn.BatchNorm2d(64)
@@ -54,6 +56,7 @@ class Generator(nn.Module):
         y = self.r1_bn2(y)
         x = z + y
 
+        """
         z = x
         y = self.r2_conv1(x)
         y = self.r2_bn1(y)
@@ -77,6 +80,7 @@ class Generator(nn.Module):
         y = self.r4_conv2(y)
         y = self.r4_bn2(y)
         x = z + y
+        """
 
         x = self.conv3(x)
         x = self.bn3(x)
