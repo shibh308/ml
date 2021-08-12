@@ -107,6 +107,6 @@ class Network:
             nn.Linear(128, 1),
             nn.Sigmoid()
         ).to(device)
-        self.G = Generator()
+        self.G = Generator().to(device)
         self.G_optim = optim.Adam(self.G.parameters(), lr=glr, betas=(gbeta, 0.999))
         self.D_optim = optim.Adam(self.D.parameters(), lr=dlr, betas=(dbeta, 0.999))
