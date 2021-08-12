@@ -56,8 +56,8 @@ def main(n_epoch, dlr, dbeta, glr, gbeta):
         cycle_loss_sum = 0.0
         for (_apple_real_imgs, _), (_orange_real_imgs, _) in zip(apple_loader, orange_loader):
             n_imgs = len(_apple_real_imgs)
-            zeros = torch.zeros((n_imgs, 1)).to(device)
-            ones = torch.ones((n_imgs, 1)).to(device)
+            zeros = torch.zeros((n_imgs, 1, 3, 3)).to(device)
+            ones = torch.ones((n_imgs, 1, 3, 3)).to(device)
 
             apple_real_imgs = _apple_real_imgs.to(device)
             orange_real_imgs = _orange_real_imgs.to(device)
