@@ -84,7 +84,7 @@ def main(n_epoch, lambda_, dlr, dbeta, glr, gbeta):
             apple_loss_sum.backward()
             orange_loss_sum.backward()
             apple.D_optim.step()
-            apple.G_optim.step()
+            orange.D_optim.step()
 
             # Generator
             apple.G_optim.zero_grad()
