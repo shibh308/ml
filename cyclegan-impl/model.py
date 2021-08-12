@@ -8,7 +8,6 @@ class Generator(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         self.conv2 = nn.Conv2d(64, 128, 3, 2, bias=True)
         self.bn2 = nn.BatchNorm2d(128)
-        # 14
 
         self.r1_conv1 = nn.Conv2d(128, 128, 1, bias=False)
         self.r1_bn1 = nn.BatchNorm2d(128)
@@ -32,7 +31,10 @@ class Generator(nn.Module):
 
         self.conv3 = nn.ConvTranspose2d(128, 64, 5, 2, 1, bias=True)
         self.bn3 = nn.BatchNorm2d(64)
-        self.conv4 = nn.ConvTranspose2d(64, 3, 6, 1, 1, bias=False)
+
+        self.conv4 = nn.ConvTranspose2d(64, 64, 4, 1, 1, bias=False)
+        self.bn4 = nn.BatchNorm2d(64)
+        self.conv5 = nn.ConvTranspose2d(64, 3, 3, 1, 0, bias=False)
         self.sigmoid = nn.Sigmoid()
     
     def forward(self, x):
@@ -81,6 +83,10 @@ class Generator(nn.Module):
         x = self.relu(x)
 
         x = self.conv4(x)
+        x = self.bn4(x)
+        x = self.relu(x)
+
+        x = self.conv5(x)
         x = self.sigmoid(x)
 
         return x

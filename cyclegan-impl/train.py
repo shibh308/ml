@@ -25,7 +25,7 @@ class SingleLabelLoader(datasets.CIFAR100):
         self.targets = new_targets
 
 
-def main(n_epoch, dlr, dbeta, glr, gbeta):
+def main(n_epoch, lambda_, dlr, dbeta, glr, gbeta):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     start_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -105,7 +105,7 @@ def main(n_epoch, dlr, dbeta, glr, gbeta):
             orange_cycle_loss = l1loss(orange_real_imgs, orange_cycle_imgs)
             cycle_loss = apple_cycle_loss + orange_cycle_loss
 
-            loss_sum = apple_fake_loss + orange_fake_loss + cycle_loss
+            loss_sum = apple_fake_loss + orange_fake_loss + lambda_ * cycle_loss
 
             # Generator Step
             loss_sum.backward()
@@ -146,10 +146,11 @@ def main(n_epoch, dlr, dbeta, glr, gbeta):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--epoch', type=int, default=10000)
+    parser.add_argument('--lambda', type=float, dest='lambda_', default=1.0)
     parser.add_argument('--dlr', type=float, default=2e-4)
     parser.add_argument('--dbeta', type=float, default=0.5)
     parser.add_argument('--glr', type=float, default=2e-4)
     parser.add_argument('--gbeta', type=float, default=0.5)
 
     args = parser.parse_args()
-    main(args.epoch, args.dlr, args.dbeta, args.glr, args.gbeta)
+    main(args.epoch, args.lambda_, args.dlr, args.dbeta, args.glr, args.gbeta)
