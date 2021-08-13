@@ -6,9 +6,7 @@ import numpy as np
 import pyworld as pw
 import pysptk as sptk
 import torch
-from torch.utils import data
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from model import Network
 
 
 def calc_mcep(wav, fs, order):
@@ -20,11 +18,10 @@ def calc_mcep(wav, fs, order):
     return mcep, f0, ap
 
 
-class WavDataSet(Dataset):
-    def __init__(self, data_pathes, transform=None, data_len=None, frame=128, mcep_only=True):
-        super().__init__()
-        self.transform = transform
+class WavDataLoader:
+    def __init__(self, data_pathes,data_len=None, frame=128, mcep_only=True, batch_size=64):
         self.frame = frame
+        self.batch_size = batch_size
         self.mcep = []
         if not mcep_only:
             self.f0 = []
@@ -41,34 +38,118 @@ class WavDataSet(Dataset):
                 self.f0.append(data['f0'])
                 self.ap.append(data['ap'])
 
-    def __len__(self):
-        return len(self.mcep)
+    def batch(self):
+        idxes = np.random.randint(0, len(self.mcep), self.batch_size)
+        dat = np.zeros((self.batch_size, self.frame, 35), dtype=np.float32)
+        for i, index in enumerate(idxes):
+            siz = self.mcep[index].shape[0]
+            st = np.random.randint(0, siz - self.frame + 1)
+            dat[i] = self.mcep[index][st:st+self.frame]
+        return torch.Tensor(dat.transpose(0, 2, 1))
 
-    def __getitem__(self, index):
-        len = self.mcep[index].shape[0]
-        st = np.random.randint(0, len - self.frame + 1)
-        mcep = self.mcep[index][st:st+self.frame]
-        print(mcep.shape)
-        return self.transform(mcep)
 
+def main(path_A, path_B, data_len, frame, lambda_, lambda2, dlr, dbeta, glr, gbeta):
+    start_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    os.makedirs(os.path.join('../results/cycleganvc-impl', start_time), exist_ok=True)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def main(data_path, target_path, data_len, frame, n_epoch, lambda_, lambda2, dlr, dbeta, glr, gbeta):
-    # start_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    # os.makedirs(os.path.join('../results/cycleganvc-impl', start_time), exist_ok=True)
+    A_pathes = glob.glob(os.path.join(path_A, '*.npz'))
+    B_pathes = glob.glob(os.path.join(path_B, '*.npz'))
 
-    data_pathes = glob.glob(os.path.join(data_path, '*.npz'))
-    target_pathes = glob.glob(os.path.join(target_path, '*.npz'))
+    A_loader = WavDataLoader(A_pathes, frame=frame, mcep_only=False, data_len=data_len, batch_size=64)
+    B_loader = WavDataLoader(B_pathes, frame=frame, mcep_only=False, data_len=data_len, batch_size=64)
 
-    elm_set = WavDataSet(data_pathes, transform=transforms.ToTensor(), frame=frame, mcep_only=False, data_len=data_len)
-    elm_loader = DataLoader(elm_set, batch_size=64, shuffle=True, num_workers=2)
+    A_net = Network(device, dlr, dbeta, glr, gbeta)
+    B_net = Network(device, dlr, dbeta, glr, gbeta)
 
-    target_set = WavDataSet(target_pathes, transform=transforms.ToTensor(), frame=frame, mcep_only=False, data_len=data_len)
-    target_loader = DataLoader(target_set, batch_size=64, shuffle=True, num_workers=2)
+    loss = torch.nn.BCELoss()
+    l1loss = torch.nn.L1Loss()
 
-    # apple = Network(device, dlr, dbeta, glr, gbeta)
+    d_losses = []
+    g_losses = []
+    cycle_losses = []
+    ident_losses = []
 
-    # for i in range(100):
-        # dataset[i]
+    iter = 0
+    while True:
+        iter += 1
+        A_real_voices = A_loader.batch().to(device)
+        B_real_voices = B_loader.batch().to(device)
+        n_voices = len(A_real_voices)
+        zeros = torch.zeros((n_voices, 1)).to(device)
+        ones = torch.ones((n_voices, 1)).to(device)
+
+        A_real_voices = A_real_voices.to(device)
+        B_real_voices = B_real_voices.to(device)
+
+        # Discriminator
+        A_net.D_optim.zero_grad()
+        B_net.D_optim.zero_grad()
+        A_fake_voices = A_net.G(B_real_voices).detach()
+        B_fake_voices = B_net.G(A_real_voices).detach()
+
+        A_real_results = A_net.D(A_real_voices[:, None])
+        A_fake_results = A_net.D(A_fake_voices[:, None])
+        A_real_loss = loss(A_real_results, ones)
+        A_fake_loss = loss(A_fake_results, zeros)
+        A_loss_sum = A_real_loss + A_fake_loss
+
+        B_real_results = B_net.D(B_real_voices[:, None])
+        B_fake_results = B_net.D(B_fake_voices[:, None])
+        B_real_loss = loss(B_real_results, ones)
+        B_fake_loss = loss(B_fake_results, zeros)
+        B_loss_sum = B_real_loss + B_fake_loss
+
+        # Discriminator Step
+        A_loss_sum.backward()
+        B_loss_sum.backward()
+        A_net.D_optim.step()
+        B_net.D_optim.step()
+
+        # Generator
+        A_net.G_optim.zero_grad()
+        B_net.G_optim.zero_grad()
+        A_fake_voices = A_net.G(B_real_voices)
+        B_fake_voices = B_net.G(A_real_voices)
+
+        A_fake_results = A_net.D(A_fake_voices[:, None])
+        B_fake_results = B_net.D(B_fake_voices[:, None])
+
+        A_fake_loss = loss(A_fake_results, ones)
+        B_fake_loss = loss(B_fake_results, ones)
+
+        # Generator (Cycle)
+        A_cycle_voices = A_net.G(B_fake_voices)
+        B_cycle_voices = B_net.G(A_fake_voices)
+        A_cycle_loss = l1loss(A_real_voices, A_cycle_voices)
+        B_cycle_loss = l1loss(B_real_voices, B_cycle_voices)
+        cycle_loss = A_cycle_loss + B_cycle_loss
+
+        # Generator (Ident)
+        A_ident_voices = A_net.G(A_real_voices)
+        B_ident_voices = B_net.G(B_real_voices)
+        A_ident_loss = l1loss(A_real_voices, A_ident_voices)
+        B_ident_loss = l1loss(B_real_voices, B_ident_voices)
+        ident_loss = A_ident_loss + B_ident_loss
+
+        loss_sum = A_fake_loss + B_fake_loss + lambda_ * cycle_loss + lambda2 * ident_loss
+
+        # Generator Step
+        loss_sum.backward()
+        A_net.G_optim.step()
+        B_net.G_optim.step()
+
+        d_loss = A_loss_sum.item() + B_loss_sum.item()
+        g_loss = A_fake_loss.item() + B_fake_loss.item()
+        cycle_loss = cycle_loss.item()
+        ident_loss = ident_loss.item()
+
+        d_losses.append(d_loss)
+        g_losses.append(g_loss)
+        cycle_losses.append(cycle_loss)
+        ident_losses.append(ident_loss)
+
+        print('iter: {:3d}, d_loss: {:.3f}, g_loss: {:.3f}, cycle_loss: {:.3f}, ident_loss: {:.3f}'.format(iter, d_loss, g_loss, cycle_loss, ident_loss))
 
     """
     sp = sptk.mc2sp(mcep, alpha = 0.46, fftlen = 1024)
@@ -80,11 +161,10 @@ def main(data_path, target_path, data_len, frame, n_epoch, lambda_, lambda2, dlr
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', required=True)
-    parser.add_argument('--target', required=True)
+    parser.add_argument('--data_A', required=True)
+    parser.add_argument('--data_B', required=True)
     parser.add_argument('--data_len', type=int, default=None)
     parser.add_argument('--frame', type=int, default=128)
-    parser.add_argument('--epoch', type=int, default=10000)
     parser.add_argument('--lambda', type=float, dest='lambda_', default=1.0)
     parser.add_argument('--lambda2', type=float, default=1.0)
     parser.add_argument('--dlr', type=float, default=2e-4)
@@ -93,4 +173,4 @@ if __name__ == '__main__':
     parser.add_argument('--gbeta', type=float, default=0.5)
 
     args = parser.parse_args()
-    main(args.dataset, args.target, args.data_len, args.frame, args.epoch, args.lambda_, args.lambda2, args.dlr, args.dbeta, args.glr, args.gbeta)
+    main(args.data_A, args.data_B, args.data_len, args.frame, args.lambda_, args.lambda2, args.dlr, args.dbeta, args.glr, args.gbeta)
