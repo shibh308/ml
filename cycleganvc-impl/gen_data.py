@@ -37,6 +37,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input_dir', required=True)
     parser.add_argument('-o', '--output_dir', required=True)
-    parser.add_argument('-n', '--num', required=True)
+    parser.add_argument('-n', '--num', default=int(1e9), type=int)
     args = parser.parse_args()
     main(args.input_dir, args.output_dir, args.num)
