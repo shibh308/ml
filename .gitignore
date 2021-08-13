@@ -2,4 +2,5 @@
 /venv
 /results/gan-impl/*
 /results/cyclegan-impl/*
+/results/cycleganvc-impl/*
 !.gitkeep
