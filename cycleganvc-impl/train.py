@@ -2,9 +2,9 @@ import argparse
 import datetime
 import glob
 import os
-from pysptk.sptk import mcep
 import soundfile
 import numpy as np
+import matplotlib.pyplot as plt
 import pyworld as pw
 import pysptk as sptk
 import torch
@@ -188,6 +188,15 @@ def main(path_A, path_B, data_len, frame, lambda_, lambda2, dlr, dbeta, glr, gbe
             print('write:', A_file_path)
             output(B_file_path, A_loader, B_net, 0)
             print('write:', B_file_path)
+
+            graph_path = os.path.join('../results/cycleganvc-impl', start_time, 'graph.png')
+            plt.plot(list(range(1, len(d_losses) + 1)), d_losses, label='d_loss')
+            plt.plot(list(range(1, len(g_losses) + 1)), g_losses, label='g_loss')
+            plt.plot(list(range(1, len(cycle_losses) + 1)), cycle_losses, label='c_loss')
+            plt.plot(list(range(1, len(ident_losses) + 1)), ident_losses, label='i_loss')
+            plt.legend()
+            plt.savefig(graph_path)
+            plt.close()
 
     """
     sp = sptk.mc2sp(mcep, alpha = 0.46, fftlen = 1024)
