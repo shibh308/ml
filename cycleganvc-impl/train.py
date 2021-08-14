@@ -2,6 +2,8 @@ import argparse
 import datetime
 import glob
 import os
+from pysptk.sptk import mcep
+import soundfile
 import numpy as np
 import pyworld as pw
 import pysptk as sptk
@@ -48,7 +50,35 @@ class WavDataLoader:
         return torch.Tensor(dat.transpose(0, 2, 1))
 
 
-def main(path_A, path_B, data_len, frame, lambda_, lambda2, dlr, dbeta, glr, gbeta):
+def output(file_path, loader, net, index):
+    mcep = loader.mcep[index]
+    f0 = loader.f0[index]
+    ap = loader.ap[index]
+
+    cat_sp = None
+
+    for i in range(0, len(mcep), 128):
+        if i + 128 > len(mcep):
+            mcep_inp = mcep[len(mcep) - 128 : len(mcep)]
+        else:
+            mcep_inp = mcep[i : i + 128]
+
+        mcep_inp = torch.Tensor(mcep_inp[None].transpose(0, 2, 1))
+        mcep_out = np.ascontiguousarray(net.G(mcep_inp).to('cpu').detach().numpy()[0].transpose(1, 0).astype(np.float64))
+
+        if i + 128 > len(mcep):
+            mcep_out = mcep_out[i - (len(mcep) - 128):]
+        sp = sptk.mc2sp(mcep_out, alpha=0.46, fftlen=1024)
+        if cat_sp is None:
+            cat_sp = sp
+        else:
+            cat_sp = np.vstack([cat_sp, sp])
+
+    syn = pw.synthesize(f0, cat_sp, ap, 22050)
+    soundfile.write(file_path, syn, 22050)
+
+
+def main(path_A, path_B, data_len, frame, lambda_, lambda2, dlr, dbeta, glr, gbeta, write_wav):
     start_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     os.makedirs(os.path.join('../results/cycleganvc-impl', start_time), exist_ok=True)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -56,8 +86,8 @@ def main(path_A, path_B, data_len, frame, lambda_, lambda2, dlr, dbeta, glr, gbe
     A_pathes = glob.glob(os.path.join(path_A, '*.npz'))
     B_pathes = glob.glob(os.path.join(path_B, '*.npz'))
 
-    A_loader = WavDataLoader(A_pathes, frame=frame, mcep_only=False, data_len=data_len, batch_size=64)
-    B_loader = WavDataLoader(B_pathes, frame=frame, mcep_only=False, data_len=data_len, batch_size=64)
+    A_loader = WavDataLoader(A_pathes, frame=frame, mcep_only=not write_wav, data_len=data_len, batch_size=64)
+    B_loader = WavDataLoader(B_pathes, frame=frame, mcep_only=not write_wav, data_len=data_len, batch_size=64)
 
     A_net = Network(device, dlr, dbeta, glr, gbeta)
     B_net = Network(device, dlr, dbeta, glr, gbeta)
@@ -151,6 +181,14 @@ def main(path_A, path_B, data_len, frame, lambda_, lambda2, dlr, dbeta, glr, gbe
 
         print('iter: {:3d}, d_loss: {:.3f}, g_loss: {:.3f}, cycle_loss: {:.3f}, ident_loss: {:.3f}'.format(iter, d_loss, g_loss, cycle_loss, ident_loss))
 
+        if iter % 100 == 0 and write_wav:
+            A_file_path = os.path.join('../results/cycleganvc-impl', start_time, 'A_{}.wav'.format(iter))
+            B_file_path = os.path.join('../results/cycleganvc-impl', start_time, 'B_{}.wav'.format(iter))
+            output(A_file_path, B_loader, A_net, 0)
+            print('write:', A_file_path)
+            output(B_file_path, A_loader, B_net, 0)
+            print('write:', B_file_path)
+
     """
     sp = sptk.mc2sp(mcep, alpha = 0.46, fftlen = 1024)
     synthesized = pw.synthesize(f0, sp, ap, fs)
@@ -171,6 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--dbeta', type=float, default=0.5)
     parser.add_argument('--glr', type=float, default=2e-4)
     parser.add_argument('--gbeta', type=float, default=0.5)
+    parser.add_argument('--write', action='store_true')
 
     args = parser.parse_args()
-    main(args.data_A, args.data_B, args.data_len, args.frame, args.lambda_, args.lambda2, args.dlr, args.dbeta, args.glr, args.gbeta)
+    main(args.data_A, args.data_B, args.data_len, args.frame, args.lambda_, args.lambda2, args.dlr, args.dbeta, args.glr, args.gbeta, args.write)
