@@ -50,7 +50,7 @@ class WavDataLoader:
         return torch.Tensor(dat.transpose(0, 2, 1))
 
 
-def output(file_path, loader, net, index):
+def output(file_path, loader, net, index, device):
     mcep = loader.mcep[index]
     f0 = loader.f0[index]
     ap = loader.ap[index]
@@ -63,7 +63,7 @@ def output(file_path, loader, net, index):
         else:
             mcep_inp = mcep[i : i + 128]
 
-        mcep_inp = torch.Tensor(mcep_inp[None].transpose(0, 2, 1))
+        mcep_inp = torch.Tensor(mcep_inp[None].transpose(0, 2, 1)).to(device)
         mcep_out = np.ascontiguousarray(net.G(mcep_inp).to('cpu').detach().numpy()[0].transpose(1, 0).astype(np.float64))
 
         if i + 128 > len(mcep):
@@ -184,9 +184,9 @@ def main(path_A, path_B, data_len, frame, lambda_, lambda2, dlr, dbeta, glr, gbe
         if iter % 100 == 0 and write_wav:
             A_file_path = os.path.join('../results/cycleganvc-impl', start_time, 'A_{}.wav'.format(iter))
             B_file_path = os.path.join('../results/cycleganvc-impl', start_time, 'B_{}.wav'.format(iter))
-            output(A_file_path, B_loader, A_net, 0)
+            output(A_file_path, B_loader, A_net, 0, device)
             print('write:', A_file_path)
-            output(B_file_path, A_loader, B_net, 0)
+            output(B_file_path, A_loader, B_net, 0, device)
             print('write:', B_file_path)
 
             graph_path = os.path.join('../results/cycleganvc-impl', start_time, 'graph.png')
